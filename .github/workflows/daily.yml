@@ -1,0 +1,43 @@
+name: Tägliche Firmenbriefe
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # 12:00 CEST (Sommer UTC+2)
+    - cron: '0 11 * * *'   # 12:00 CET  (Winter UTC+1)
+  workflow_dispatch:         # Manuell auslösbar (für Tests)
+
+jobs:
+  firmenbriefe:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: LibreOffice installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libreoffice --no-install-recommends
+
+      - name: Python-Abhängigkeiten installieren
+        run: pip install python-docx requests
+
+      - name: Automation ausführen
+        env:
+          GMAIL_USER:         ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO:           fabio.dixon@confidio.ch
+        run: python automation.py
+
+      - name: Tracking-Dateien committen
+        run: |
+          git config user.email "bot@noreply.github.com"
+          git config user.name  "Firmenbriefe Bot"
+          git add .processed_firms.txt .task_log.txt || true
+          git diff --staged --quiet || git commit -m "Update $(date +%Y-%m-%d)"
+          git push || true

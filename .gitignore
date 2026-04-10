@@ -1,0 +1,12 @@
+# PDFs (werden nur per E-Mail versandt, nicht ins Repo committed)
+pdfs/
+/tmp/
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
