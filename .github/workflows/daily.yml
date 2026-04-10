@@ -31,7 +31,7 @@ jobs:
         env:
           GMAIL_USER:         ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          EMAIL_TO:           fabio.dixon@confidio.ch
+          EMAIL_TO:           kenith.gerardo.catari@elvia.ch
         run: python automation.py
 
       - name: Tracking-Dateien committen
