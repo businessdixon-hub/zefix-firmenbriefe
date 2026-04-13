@@ -2,9 +2,8 @@ name: Tägliche Firmenbriefe
 
 on:
   schedule:
-    - cron: '0 10 * * *'   # 12:00 CEST (Sommer UTC+2)
-    - cron: '0 11 * * *'   # 12:00 CET  (Winter UTC+1)
-  workflow_dispatch:         # Manuell auslösbar (für Tests)
+    - cron: '0 10 * * 1-5'  # 12:00 CEST (Sommer UTC+2), Mo–Fr
+  workflow_dispatch:          # Manuell auslösbar (für Tests)
 
 jobs:
   firmenbriefe:
@@ -39,5 +38,8 @@ jobs:
           git config user.email "bot@noreply.github.com"
           git config user.name  "Firmenbriefe Bot"
           git add .processed_firms.txt .task_log.txt || true
-          git diff --staged --quiet || git commit -m "Update $(date +%Y-%m-%d)"
-          git push || true
+          if ! git diff --staged --quiet; then
+            git commit -m "Update $(date +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin main
+          fi
