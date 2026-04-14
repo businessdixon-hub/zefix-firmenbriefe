@@ -8,6 +8,8 @@ on:
 jobs:
   firmenbriefe:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Nötig für git push von .processed_firms.txt
 
     steps:
       - name: Checkout Repository
