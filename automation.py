@@ -37,7 +37,11 @@ EMAIL_TO        = os.environ.get("EMAIL_TO", "fabio.dixon@confidio.ch")
 GMAIL_USER      = os.environ.get("GMAIL_USER", "")
 GMAIL_PASSWORD  = os.environ.get("GMAIL_APP_PASSWORD", "")
 
-# Direkt-Versand an Firmen via Microsoft 365 (info@confidio.ch)
+# Direkt-Versand an Firmen
+# Anzeige-Adresse für den Empfänger (From + Reply-To)
+SENDER_NAME     = os.environ.get("SENDER_NAME", "Confidio Team")
+SENDER_REPLYTO  = os.environ.get("SENDER_REPLYTO", "info@confidio.ch")
+# Optional: SMTP via Microsoft 365 (info@confidio.ch). Wenn leer → Fallback auf Gmail.
 M365_USER       = os.environ.get("M365_USER", "")
 M365_PASSWORD   = os.environ.get("M365_PASSWORD", "")
 M365_HOST       = os.environ.get("M365_HOST", "smtp.office365.com")
@@ -271,39 +275,48 @@ def convert_to_pdf(docx_path: Path, out_dir: Path) -> Path:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 6a. Direkt-Email an Firma (Microsoft 365)
+# 6a. Direkt-Email an Firma
 # ══════════════════════════════════════════════════════════════════════════════
 def send_direct_email(to_email: str, firm_name: str, anrede_formal: str) -> bool:
-    """Sendet HTML-Email direkt an die Firma. Returns True bei Erfolg."""
-    if not (M365_USER and M365_PASSWORD):
-        log.warning("M365_USER/M365_PASSWORD nicht gesetzt – kann keine Direkt-Email senden")
-        return False
-
+    """
+    Sendet HTML-Email direkt an die Firma.
+    Wenn M365-Credentials gesetzt sind: SMTP via Microsoft 365 (info@confidio.ch).
+    Sonst: Fallback auf Gmail (Anzeige als 'Confidio Team', Reply-To info@confidio.ch).
+    """
     subject = email_template.SUBJECT
     actual_to = to_email
     if TEST_MODE:
         actual_to = TEST_REDIRECT
         subject = f"[TEST → {to_email}] {subject}"
 
-    msg = MIMEMultipart("alternative")
-    msg["From"]    = M365_USER
-    msg["To"]      = actual_to
-    msg["Subject"] = subject
-    msg["Reply-To"] = M365_USER
-
     text_body = email_template.build_text(anrede_formal)
     html_body = email_template.build_html(anrede_formal, firm_name)
+
+    msg = MIMEMultipart("alternative")
+    msg["To"]       = actual_to
+    msg["Subject"]  = subject
+    msg["Reply-To"] = SENDER_REPLYTO
     msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    use_m365 = bool(M365_USER and M365_PASSWORD)
     try:
-        with smtplib.SMTP(M365_HOST, M365_PORT, timeout=30) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(M365_USER, M365_PASSWORD)
-            server.send_message(msg)
-        log.info(f"  ✓ Direkt-Email an {actual_to} gesendet ({'TEST' if TEST_MODE else 'LIVE'})")
+        if use_m365:
+            msg["From"] = M365_USER
+            with smtplib.SMTP(M365_HOST, M365_PORT, timeout=30) as server:
+                server.ehlo(); server.starttls(); server.ehlo()
+                server.login(M365_USER, M365_PASSWORD)
+                server.send_message(msg)
+            sender_label = M365_USER
+        else:
+            # Fallback: Gmail (gleiche Credentials wie Sammel-Email)
+            msg["From"] = f'"{SENDER_NAME}" <{GMAIL_USER}>'
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
+                server.login(GMAIL_USER, GMAIL_PASSWORD)
+                server.send_message(msg)
+            sender_label = f'"{SENDER_NAME}" via Gmail'
+        log.info(f"  ✓ Direkt-Email an {actual_to} gesendet "
+                 f"({'TEST' if TEST_MODE else 'LIVE'}, von {sender_label})")
         return True
     except Exception as e:
         log.error(f"  ✗ Direkt-Email an {actual_to} fehlgeschlagen: {e}")

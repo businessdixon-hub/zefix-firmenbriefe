@@ -30,11 +30,16 @@ jobs:
 
       - name: Automation ausführen
         env:
-          # Sammel-Email (Bericht + PDFs für Postversand) via Gmail
+          # SMTP Credentials (Gmail) - sowohl Sammel-Email als auch Fallback für Direkt-Emails
           GMAIL_USER:         ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # Sammel-Email-Empfänger (Bericht + PDFs für Postversand)
           EMAIL_TO:           fabio.dixon@confidio.ch     # später: iwan.marra@confidio.ch
-          # Direkt-Versand an Firmen via Microsoft 365 (info@confidio.ch)
+          # Anzeige-Identität für Direkt-Emails an Firmen
+          SENDER_NAME:        "Confidio Team"
+          SENDER_REPLYTO:     info@confidio.ch
+          # Optional: Microsoft 365 SMTP – wenn gesetzt, Versand AS info@confidio.ch.
+          # Wenn leer, Fallback auf Gmail mit Anzeigename "Confidio Team" + Reply-To info@.
           M365_USER:          ${{ secrets.M365_USER }}
           M365_PASSWORD:      ${{ secrets.M365_PASSWORD }}
           # Test-Modus: Direkt-Emails gehen an TEST_REDIRECT statt an Firma
