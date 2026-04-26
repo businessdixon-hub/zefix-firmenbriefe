@@ -10,3 +10,5 @@ __pycache__/
 # macOS / Windows
 .DS_Store
 Thumbs.db
+.claude/
+SESSION_CONTEXT.md

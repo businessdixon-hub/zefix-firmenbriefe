@@ -30,16 +30,23 @@ jobs:
 
       - name: Automation ausführen
         env:
+          # Sammel-Email (Bericht + PDFs für Postversand) via Gmail
           GMAIL_USER:         ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          EMAIL_TO:           kenith.gerardo.catari@elvia.ch
+          EMAIL_TO:           fabio.dixon@confidio.ch     # später: iwan.marra@confidio.ch
+          # Direkt-Versand an Firmen via Microsoft 365 (info@confidio.ch)
+          M365_USER:          ${{ secrets.M365_USER }}
+          M365_PASSWORD:      ${{ secrets.M365_PASSWORD }}
+          # Test-Modus: Direkt-Emails gehen an TEST_REDIRECT statt an Firma
+          TEST_MODE:          "true"
+          TEST_REDIRECT:      fabio.dixon@confidio.ch
         run: python automation.py
 
       - name: Tracking-Dateien committen
         run: |
           git config user.email "bot@noreply.github.com"
           git config user.name  "Firmenbriefe Bot"
-          git add .processed_firms.txt .task_log.txt || true
+          git add .processed_firms.txt .emailed_firms.txt .task_log.txt || true
           if ! git diff --staged --quiet; then
             git commit -m "Update $(date +%Y-%m-%d)"
             git pull --rebase origin main
